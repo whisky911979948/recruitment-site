@@ -39,14 +39,17 @@ function fillSelect(id, values) {
 }
 const cities = [...new Set(jobs.map(j => j.city))].sort();
 const categories = [...new Set(jobs.map(j => j.category))].sort();
+const types = [...new Set(jobs.map(j => j.type))].sort();
 fillSelect("cityFilter", cities);
 fillSelect("categoryFilter", categories);
+fillSelect("typeFilter", types);
 
 // ---------- 3. 根据搜索框 + 筛选条件，挑出要显示的岗位 ----------
 function getFiltered() {
   const kw = document.getElementById("searchInput").value.trim().toLowerCase();
   const city = document.getElementById("cityFilter").value;
   const cat = document.getElementById("categoryFilter").value;
+  const type = document.getElementById("typeFilter").value;
   const sal = document.getElementById("salaryFilter").value; // 如 "15000-25000" 或 "perday"
 
   return jobs.filter(j => {
@@ -56,6 +59,8 @@ function getFiltered() {
     if (city && j.city !== city) return false;
     // 行业
     if (cat && j.category !== cat) return false;
+    // 招聘类型：校招 / 实习 / 社招
+    if (type && j.type !== type) return false;
     // 薪资区间
     if (sal) {
       const s = parseSalary(j.salary);
@@ -88,9 +93,11 @@ function render() {
         <a href="${j.link}" target="_blank" rel="noopener">${j.title}</a>
       </div>
       <div class="job-meta">
+        <span class="tag type-${j.type}">${j.type}</span>
         <span class="tag">${j.company}</span>
         <span class="tag">${j.city}</span>
         <span class="tag">${j.category}</span>
+        ${j.nature ? `<span class="tag">${j.nature}</span>` : ""}
         <span class="tag salary">${j.salary}</span>
         <span class="tag">${j.education}</span>
         <span class="tag">${j.experience}</span>
@@ -102,7 +109,7 @@ function render() {
 }
 
 // ---------- 5. 让控件「一变就刷新」 ----------
-["searchInput", "cityFilter", "categoryFilter", "salaryFilter"].forEach(id => {
+["searchInput", "cityFilter", "categoryFilter", "typeFilter", "salaryFilter"].forEach(id => {
   document.getElementById(id).addEventListener("input", render);
   document.getElementById(id).addEventListener("change", render);
 });
