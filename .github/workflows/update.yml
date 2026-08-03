@@ -1,0 +1,41 @@
+# 定时自动更新 + 免费托管（GitHub Actions）
+# 作用：每隔一段时间自动跑 node update/fetch.js，把最新岗位写回 jobs.js，
+#       再提交，GitHub Pages 就会把更新后的网站免费发到网上。
+# 这是「自动更新」里最省钱的方案，个人用完全免费。
+#
+# 怎么用（后面部署那步我会细讲）：
+#   1) 把这个 recruitment-site 文件夹整个上传到 GitHub 一个新仓库
+#   2) 仓库 Settings → Pages → Source 选 GitHub Actions
+#   3) 本文件一进仓库就生效，之后每 6 小时自动更新一次
+
+name: 定时更新招聘数据
+on:
+  # 频率说明：Techmap 免费档只有 100 次请求/月。本来源每次翻 3 页 = 3 次请求，
+  # 每天跑一次 ≈ 90 次/月，刚好不超限。想更省就改成每周（"0 8 * * 1"）。
+  schedule:
+    - cron: "0 8 * * *"   # 每天 UTC 8 点跑一次（约北京时间 16 点）
+  workflow_dispatch:        # 也允许你在 Actions 页面手动点一下立即运行
+
+permissions:
+  contents: write           # 允许脚本把更新后的 jobs.js 提交回仓库
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: 运行更新脚本
+        env:
+          # 密钥从「仓库 Settings → Secrets → Actions」里读取，绝不写进代码
+          TECHMAP_API_KEY: ${{ secrets.TECHMAP_API_KEY }}
+        run: node update/fetch.js
+      - name: 提交更新后的数据
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add jobs.js
+          git commit -m "chore: 自动更新招聘数据" || echo "无变化，跳过"
+          git push
